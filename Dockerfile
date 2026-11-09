@@ -23,7 +23,14 @@ RUN cargo build --release
 
 FROM cgr.dev/chainguard/wolfi-base:latest
 
+# The binary is built on Debian (rust image above) and links OpenSSL 3; wolfi-base
+# now ships only OpenSSL 4, so install the 3.x libraries it needs.
+RUN apk add --no-cache libssl3 libcrypto3
+
 COPY --from=builder /app/target/release/elasticsearch-core-mcp-server /usr/local/bin/elasticsearch-core-mcp-server
+
+# Fail the build, not the container, if a shared library is missing.
+RUN ["/usr/local/bin/elasticsearch-core-mcp-server", "--help"]
 
 ENV CONTAINER_MODE=true
 
