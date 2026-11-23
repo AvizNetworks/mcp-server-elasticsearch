@@ -21,11 +21,14 @@ RUN cargo build --release
 
 #--------------------------------------------------------------------------------------------------
 
-FROM cgr.dev/chainguard/wolfi-base:latest
+# Aviz fork divergence: wolfi-base now requires Chainguard registry auth to
+# pull even :latest, which breaks anonymous CI/dev builds with a 403 — switched
+# to Debian, which matches the glibc toolchain the binary above is built with.
+FROM debian:bookworm-slim
 
-# The binary is built on Debian (rust image above) and links OpenSSL 3; wolfi-base
-# now ships only OpenSSL 4, so install the 3.x libraries it needs.
-RUN apk add --no-cache libssl3 libcrypto3
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libssl3 ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/elasticsearch-core-mcp-server /usr/local/bin/elasticsearch-core-mcp-server
 
